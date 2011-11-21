@@ -18,15 +18,45 @@ package facebooklib
 
 // User object. See http://developers.facebook.com/docs/reference/api/user/
 type User struct {
-	Id string
-	Name string
-	First_name string
-	Middle_name string
-	Last_name string
-	Gender string
-	Locale string
-	Link string
-	Username string
+	Id             string
+	Name           string
+	First_name     string
+	Middle_name    string
+	Last_name      string
+	Gender         string
+	Locale         string
+	Languages      []ObjectRef
+	Link           string
+	Username       string
 	Third_party_id string
+	timezone       int64
+	Update_time    string
+	Verified       boolean
+	Bio            string
+	Birthday       string // MM/DD/YYYY
+	//Education ODO
+	Email               string
+	Hometown            string
+	Interested_in       []string
+	Location            ObjectRef
+	Political           string
+	Favorite_athletes   []ObjectRef
+	Quotes              string
+	Relationship_status string
+	Religion            string
+	Significant_other   ObjectRef
+	// Video_upload_limits
+	Website string
+	//Work
+
 	Client *FacebookClient
+}
+
+// This type is used by various facebook objects to
+// represent a user ID. The reason for having both
+// Id and Name is to avoid ambiguity in cases where
+// a user name is a valid Id
+type ObjectRef struct {
+	Id   string
+	Name string
 }

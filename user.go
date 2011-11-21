@@ -9,6 +9,12 @@ var (
 	UserNotConnectedError = os.NewError("User Not Connected")
 	)
 
+// Useful if all you want is to have an Id to perform actions
+// This prevents having to query a user object from FB.
+func NewUser(Id string, fc *FacebookClient) *User {
+	return &User{Id: Id, Client: fc}
+}
+
 func (user *User) PostStatus(message string) os.Error {
 	if user.Client == nil {
 		return UserNotConnectedError
