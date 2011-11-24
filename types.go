@@ -29,9 +29,9 @@ type User struct {
 	Link           string
 	Username       string
 	Third_party_id string
-	timezone       int64
+	Timezone       int64
 	Update_time    string
-	Verified       boolean
+	Verified       bool
 	Bio            string
 	Birthday       string // MM/DD/YYYY
 	//Education ODO

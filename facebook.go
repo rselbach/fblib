@@ -25,10 +25,14 @@ import (
 	"json"
 	"os"
 	"strconv"
+
 	"time"
 	"url"
 )
 
+var (
+	ErrOAuth = os.NewError("OAuth authorization failure")
+	)
 const (
 	tokenRequestURL = "https://www.facebook.com/dialog/oauth"         // request token endpoint
 	accessTokenURL  = "https://graph.facebook.com/oauth/access_token" // access token endpoint
@@ -40,7 +44,7 @@ type FacebookClient struct {
 	APIKey      string
 	AppSecret   string
 	AccessToken string
-	Transport   *http.Transport
+	Transport   http.RoundTripper
 }
 
 type TempToken struct {
@@ -56,10 +60,10 @@ func nonce() string {
 func NewFacebookClient(key, secret string) *FacebookClient {
 	return &FacebookClient{APIKey: key,
 		AppSecret: secret,
-		Transport: &http.Transport{DisableKeepAlives: true}}
-}
+		Transport: http.DefaultTransport}
+	}
 
-func (fc *FacebookClient) GetAuthURL(redirectURI, scope string) string {
+func (fc *FacebookClient) AuthURL(redirectURI, scope string) string {
 	params := make(url.Values)
 	if scope != "" {
 		params.Set("scope", scope)
@@ -68,6 +72,8 @@ func (fc *FacebookClient) GetAuthURL(redirectURI, scope string) string {
 	params.Set("redirect_uri", redirectURI)
 	return fmt.Sprintf("%s?%s", tokenRequestURL, params.Encode())
 }
+
+
 
 func (fc *FacebookClient) RequestAccessToken(code, redirectURI string) os.Error {
 	var body io.Reader
@@ -89,6 +95,7 @@ func (fc *FacebookClient) RequestAccessToken(code, redirectURI string) os.Error 
 	defer resp.Body.Close()
 	var respBody []byte
 	respBody, _ = ioutil.ReadAll(resp.Body)
+
 	if resp.StatusCode == 400 {
 		return fc.parseError(respBody)
 	}
@@ -106,9 +113,15 @@ func (fc *FacebookClient) parseError(respBody []byte) os.Error {
 	json.Unmarshal(respBody, &buf)
 	errorMap := buf["error"]
 	if errorMap != nil {
-		error := errorMap.(map[string]string)
-		if error["message"] != "" {
-			return os.NewError(error["message"])
+		error := errorMap.(map[string]interface{})
+		msg := error["message"].(string)
+		kind := error["type"].(string)
+		if msg != "" {
+			if kind == "OAuthException" {
+				return ErrOAuth
+			} else {
+				return os.NewError(error["message"].(string))
+			}
 		}
 	}
 	return os.NewError("Unknown error")
@@ -158,8 +171,8 @@ func (fc *FacebookClient) Call(httpMethod, endpoint string, params url.Values) (
 	defer resp.Body.Close()
 	var respBody []byte
 	respBody, _ = ioutil.ReadAll(resp.Body)
-	fmt.Printf("\n%s\n", respBody)
-	if resp.StatusCode == 400 {
+
+	if resp.StatusCode != 200 {
 		return []byte(""), fc.parseError(respBody)
 	}
 
@@ -182,4 +195,20 @@ func (fc *FacebookClient) User(id string) (*User, os.Error) {
 
 func (fc *FacebookClient) CurrentUser() (*User, os.Error) {
 	return fc.User("me")
+}
+
+func (fc *FacebookClient) PostLink(message, link string) os.Error {
+	u := make(url.Values)
+	u.Add("message", message)
+	u.Add("link", link)
+	_, err := fc.Call("POST", "me/links", u)
+
+	return err
+}
+
+func (fc *FacebookClient) PostStatus(message string) os.Error {
+	u := make(url.Values)
+	u.Add("message", message)
+	_, err := fc.Call("POST", "me/feed", u)
+	return err
 }
