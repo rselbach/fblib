@@ -1,4 +1,4 @@
-// twitterlib - A simple, fully oauth-authenticated Twitter library
+// fblib - A simple, fully oauth-authenticated Twitter library
 
 // Copyright (c) 2011, Roberto Teixeira <r@robteix.com>
 //
@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package facebooklib
+package fblib
 
 // User object. See http://developers.facebook.com/docs/reference/api/user/
 type User struct {

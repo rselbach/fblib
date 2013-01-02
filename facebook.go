@@ -14,27 +14,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package facebooklib
+package fblib
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"http"
 	"io"
 	"io/ioutil"
-	"json"
-	"os"
+	"net/http"
 	"strconv"
 
+	"net/url"
 	"time"
-	"url"
 )
 
 var (
-	ErrOAuth = os.NewError("OAuth authorization failure")
-	)
+	ErrOAuth = errors.New("OAuth authorization failure")
+)
+
 const (
-	tokenRequestURL = "https://www.facebook.com/dialog/oauth"         // request token endpoint
+	tokenRequestURL = "https://www.faceook.com/dialog/oauth"         // request token endpoint
 	accessTokenURL  = "https://graph.facebook.com/oauth/access_token" // access token endpoint
 
 	apiURL = "https://graph.facebook.com"
@@ -53,15 +54,15 @@ type TempToken struct {
 }
 
 func nonce() string {
-	s := time.Nanoseconds()
-	return strconv.Itoa64(s)
+	s := time.Now()
+	return strconv.FormatInt(s.Unix(), 10)
 }
 
 func NewFacebookClient(key, secret string) *FacebookClient {
 	return &FacebookClient{APIKey: key,
 		AppSecret: secret,
 		Transport: http.DefaultTransport}
-	}
+}
 
 func (fc *FacebookClient) AuthURL(redirectURI, scope string) string {
 	params := make(url.Values)
@@ -73,9 +74,7 @@ func (fc *FacebookClient) AuthURL(redirectURI, scope string) string {
 	return fmt.Sprintf("%s?%s", tokenRequestURL, params.Encode())
 }
 
-
-
-func (fc *FacebookClient) RequestAccessToken(code, redirectURI string) os.Error {
+func (fc *FacebookClient) RequestAccessToken(code, redirectURI string) error {
 	var body io.Reader
 	body = bytes.NewBuffer([]byte(""))
 	params := make(url.Values)
@@ -108,7 +107,7 @@ func (fc *FacebookClient) RequestAccessToken(code, redirectURI string) os.Error 
 	return nil
 }
 
-func (fc *FacebookClient) parseError(respBody []byte) os.Error {
+func (fc *FacebookClient) parseError(respBody []byte) error {
 	var buf map[string]interface{}
 	json.Unmarshal(respBody, &buf)
 	errorMap := buf["error"]
@@ -120,14 +119,14 @@ func (fc *FacebookClient) parseError(respBody []byte) os.Error {
 			if kind == "OAuthException" {
 				return ErrOAuth
 			} else {
-				return os.NewError(error["message"].(string))
+				return errors.New(error["message"].(string))
 			}
 		}
 	}
-	return os.NewError("Unknown error")
+	return errors.New("Unknown error")
 }
 
-func (fc *FacebookClient) GetUser(id string) (*User, os.Error) {
+func (fc *FacebookClient) GetUser(id string) (*User, error) {
 	u := make(url.Values)
 	u.Set("access_token", fc.AccessToken)
 	body := bytes.NewBuffer([]byte(u.Encode()))
@@ -154,7 +153,7 @@ func (fc *FacebookClient) GetUser(id string) (*User, os.Error) {
 
 // Performs API call based on httpMethod
 // returns the response body as string and error/nil
-func (fc *FacebookClient) Call(httpMethod, endpoint string, params url.Values) ([]byte, os.Error) {
+func (fc *FacebookClient) Call(httpMethod, endpoint string, params url.Values) ([]byte, error) {
 	body := bytes.NewBuffer([]byte(params.Encode()))
 	cmdStr := fmt.Sprintf("%s/%s?access_token=%s", apiURL, endpoint, fc.AccessToken)
 	if httpMethod == "GET" {
@@ -179,25 +178,27 @@ func (fc *FacebookClient) Call(httpMethod, endpoint string, params url.Values) (
 	return respBody, nil
 }
 
-func (fc *FacebookClient) User(id string) (*User, os.Error) {
+func (fc *FacebookClient) User(id string) (*User, error) {
 	u := new(url.Values)
 	resp, err := fc.Call("GET", id, *u)
 	if err != nil {
 		return nil, err
 	}
 	user := new(User)
-	if err = json.Unmarshal(resp, user); err != nil {
-		return nil, err
-	}
+
+	//if err = json.Unmarshal(resp, user); err != nil {
+	//	return nil, os.NewError(fmt.Sprintf("fc.User error -> %s (resp body: '%s')", err, resp))
+	//}
+	json.Unmarshal(resp, user)
 	user.Client = fc
 	return user, nil
 }
 
-func (fc *FacebookClient) CurrentUser() (*User, os.Error) {
+func (fc *FacebookClient) CurrentUser() (*User, error) {
 	return fc.User("me")
 }
 
-func (fc *FacebookClient) PostLink(message, link string) os.Error {
+func (fc *FacebookClient) PostLink(message, link string) error {
 	u := make(url.Values)
 	u.Add("message", message)
 	u.Add("link", link)
@@ -206,7 +207,7 @@ func (fc *FacebookClient) PostLink(message, link string) os.Error {
 	return err
 }
 
-func (fc *FacebookClient) PostStatus(message string) os.Error {
+func (fc *FacebookClient) PostStatus(message string) error {
 	u := make(url.Values)
 	u.Add("message", message)
 	_, err := fc.Call("POST", "me/feed", u)

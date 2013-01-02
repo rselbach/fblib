@@ -8,7 +8,7 @@ Installing
 
 Best way to isntall this package is by running goinstall:
 
-	goinstall github.com/robteix/fblib
+	go get github.com/robteix/fblib
 
 And then you can import it in your code like this:
 
@@ -17,11 +17,6 @@ And then you can import it in your code like this:
 		"github.com/robteix/fblib"
 		...
 	)
-
-And of course, if you want to do it manually, just check the code,
-cd to the project's root dir and do a:
-
-	gomake install
 
 License
 -------
