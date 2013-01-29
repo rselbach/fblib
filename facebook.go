@@ -35,7 +35,7 @@ var (
 )
 
 const (
-	tokenRequestURL = "https://www.faceook.com/dialog/oauth"         // request token endpoint
+	tokenRequestURL = "https://www.facebook.com/dialog/oauth"         // request token endpoint
 	accessTokenURL  = "https://graph.facebook.com/oauth/access_token" // access token endpoint
 
 	apiURL = "https://graph.facebook.com"
