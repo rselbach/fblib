@@ -23,10 +23,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
-	"strconv"
-
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -178,6 +178,31 @@ func (fc *FacebookClient) Call(httpMethod, endpoint string, params url.Values) (
 	return respBody, nil
 }
 
+// Performs POST-based API call with a prepared
+// body. Returns the response body as string and error/nil
+func (fc *FacebookClient) PostCall(endpoint, header string, body []byte) ([]byte, error) {
+	cmdStr := fmt.Sprintf("%s/%s?access_token=%s", apiURL, endpoint, fc.AccessToken)
+	bodyReader := bytes.NewReader(body)
+	req, err := http.NewRequest("POST", cmdStr, bodyReader)
+	req.Header.Set("Content-Type", header)
+	if err != nil {
+		return []byte(""), err
+	}
+	resp, err := fc.Transport.RoundTrip(req)
+	if err != nil {
+		return []byte(""), err
+	}
+	defer resp.Body.Close()
+	var respBody []byte
+	respBody, _ = ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode != 200 {
+		return []byte(""), fc.parseError(respBody)
+	}
+
+	return respBody, nil
+}
+
 func (fc *FacebookClient) User(id string) (*User, error) {
 	u := new(url.Values)
 	resp, err := fc.Call("GET", id, *u)
@@ -198,10 +223,11 @@ func (fc *FacebookClient) CurrentUser() (*User, error) {
 	return fc.User("me")
 }
 
-func (fc *FacebookClient) PostLink(message, link string) error {
+func (fc *FacebookClient) PostLink(link Link) error {
 	u := make(url.Values)
-	u.Add("message", message)
-	u.Add("link", link)
+	u.Add("message", link.Text)
+	u.Add("link", link.Url)
+	u.Add("picture", link.Image)
 	_, err := fc.Call("POST", "me/links", u)
 
 	return err
@@ -212,4 +238,23 @@ func (fc *FacebookClient) PostStatus(message string) error {
 	u.Add("message", message)
 	_, err := fc.Call("POST", "me/feed", u)
 	return err
+}
+
+func (fc *FacebookClient) PostPhoto(photo Photo) error {
+	body := bytes.NewBufferString("")
+	mp := multipart.NewWriter(body)
+	mp.WriteField("message", photo.Message)
+	writer, err := mp.CreateFormFile("source", photo.FileName)
+	if err != nil {
+		return err
+	}
+	writer.Write(photo.Source)
+	header := fmt.Sprintf("multipart/form-data;boundary=%v", mp.Boundary())
+	mp.Close()
+	_, err = fc.PostCall("me/photos", header, body.Bytes())
+	//urls := fmt.Sprintf("https://upload.twitter.com/1/%s.json", "statuses/update_with_media")
+	//req, _ := http.NewRequest("POST", urls, body)
+	//req.Header.Set("Content-Type", header)
+	return err
+
 }
