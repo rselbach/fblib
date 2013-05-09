@@ -8,29 +8,20 @@ Installing
 
 Best way to isntall this package is by running goinstall:
 
-	go get github.com/robteix/fblib
+	go get robteix.com/v2/fblib
 
 And then you can import it in your code like this:
 
 	import (
 		...
-		"github.com/robteix/fblib"
+		"robteix.com/v2/fblib"
 		...
 	)
 
 License
 -------
 
-Copyright (c) 2011, Roberto Teixeira <r@robteix.com>
+Copyright (C) 2011 The Fblib Authors. All rights reserved.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Use of this library is subject to the Simplified BSD license
+that can be found in the LICENSE file.
