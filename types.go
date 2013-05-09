@@ -60,3 +60,17 @@ type ObjectRef struct {
 	Id   string
 	Name string
 }
+
+// Link represents a link to be posted
+type Link struct {
+	Text  string // Additional text added to the post
+	Image string // URL for the Image to be used
+	Url   string // URL to be shared
+}
+
+// Photo represents a photo resource to be shared
+type Photo struct {
+	Source   []byte // the photo data to be uploaded
+	FileName string // name of the photo file to be uploaded (e.g. "photo.png")
+	Message  string // some descriptive text
+}
